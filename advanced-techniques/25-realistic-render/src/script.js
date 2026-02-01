@@ -9,6 +9,7 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
  */
 const gltfLoader = new GLTFLoader()
 const rgbeLoader = new RGBELoader()
+const textureLoader = new THREE.TextureLoader()
 
 /**
  * Base
@@ -30,6 +31,8 @@ const updateAllMaterials = () => {
   scene.traverse((child) => {
     if (child.isMesh && child.material.isMeshStandardMaterial) {
       child.material.envMapIntensity = global.envMapIntensity
+      child.castShadow = true
+      child.receiveShadow = true
     }
   })
 }
@@ -54,17 +57,125 @@ rgbeLoader.load('/environmentMaps/0/2k.hdr', (environmentMap) => {
   scene.environment = environmentMap
 })
 
+//Directional Lights
+const directionalLights = new THREE.DirectionalLight('#ffffff', 1)
+directionalLights.position.set(3, 7, 6)
+scene.add(directionalLights)
+
+directionalLights.castShadow = true
+directionalLights.shadow.camera.far = 15
+directionalLights.shadow.mapSize.set(1024, 1024)
+directionalLights.target.position.set(0, 4, 0)
+directionalLights.target.updateWorldMatrix()
+directionalLights.shadow.bias = 0.002
+directionalLights.shadow.normalBias = 0.05
+gui.add(directionalLights, 'castShadow')
+gui.add(directionalLights.shadow, 'bias').min(-0.05).max(0.05).step(0.001)
+gui.add(directionalLights.shadow, 'normalBias').min(-0.05).max(0.05).step(0.001)
+gui
+  .add(directionalLights, 'intensity')
+  .min(0)
+  .max(10)
+  .step(0.001)
+  .name('Light_Intensity')
+gui
+  .add(directionalLights.position, 'x')
+  .min(-5)
+  .max(5)
+  .step(0.001)
+  .name('LightX')
+gui
+  .add(directionalLights.position, 'y')
+  .min(-5)
+  .max(5)
+  .step(0.001)
+  .name('LightY')
+gui
+  .add(directionalLights.position, 'z')
+  .min(-5)
+  .max(5)
+  .step(0.001)
+  .name('LightZ')
+
+//DirectionalLights Helper
+const directionalLightsCameraHelper = new THREE.CameraHelper(
+  directionalLights.shadow.camera
+)
+scene.add(directionalLightsCameraHelper)
+
+// const axesHelper = new THREE.AxesHelper(20)
+// scene.add(axesHelper)
+
+//Textures
+
+const groundDiffuse = textureLoader.load(
+  '/textures/wood_cabinet_worn_long/wood_cabinet_worn_long_diff_1k.jpg'
+)
+groundDiffuse.colorSpace = THREE.SRGBColorSpace
+const groundNormal = textureLoader.load(
+  '/textures/wood_cabinet_worn_long/wood_cabinet_worn_long_nor_gl_1k.png'
+)
+const groundARM = textureLoader.load(
+  '/textures/wood_cabinet_worn_long/wood_cabinet_worn_long_arm_1k.jpg'
+)
+
+const backWallDiffuse = textureLoader.load(
+  '/textures/castle_brick_broken_06/castle_brick_broken_06_diff_1k.jpg'
+)
+backWallDiffuse.colorSpace = THREE.SRGBColorSpace
+const backWallNormal = textureLoader.load(
+  '/textures/castle_brick_broken_06/castle_brick_broken_06_nor_gl_1k.png'
+)
+const backWallARM = textureLoader.load(
+  '/textures/castle_brick_broken_06/castle_brick_broken_06_arm_1k.jpg'
+)
 /**
  * Models
  */
 // Helmet
-gltfLoader.load('/models/FlightHelmet/glTF/FlightHelmet.gltf', (gltf) => {
-  gltf.scene.scale.set(10, 10, 10)
+// gltfLoader.load('/models/FlightHelmet/glTF/FlightHelmet.gltf', (gltf) => {
+//   gltf.scene.scale.set(10, 10, 10)
+//   scene.add(gltf.scene)
+
+//   updateAllMaterials()
+// })
+
+//Simons Burger
+gltfLoader.load('/models/hamburger.glb', (gltf) => {
+  gltf.scene.scale.set(0.4, 0.4, 0.4)
+  gltf.scene.position.set(0,4,0)
   scene.add(gltf.scene)
 
   updateAllMaterials()
 })
+const groundMesh = new THREE.Mesh(
+  new THREE.PlaneGeometry(8, 8),
+  new THREE.MeshStandardMaterial({
+    map: groundDiffuse,
+    normalMap: groundNormal,
+    aoMap: groundARM,
+    roughnessMap: groundARM,
+    metalnessMap: groundARM,
+    aoMapIntensity: 1,
+  })
+)
+groundMesh.receiveShadow = true
+groundMesh.rotation.set(-Math.PI / 2, 0, 0)
+scene.add(groundMesh)
 
+const backWall = new THREE.Mesh(
+  new THREE.PlaneGeometry(8, 8),
+  new THREE.MeshStandardMaterial({
+    map: backWallDiffuse,
+    normalMap: backWallNormal,
+    aoMap: backWallARM,
+    roughnessMap: backWallARM,
+    metalnessMap: backWallARM,
+    aoMapIntensity: 1,
+  })
+)
+backWall.position.set(0, 4, -4)
+scene.add(backWall)
 /**
  * Sizes
  */
@@ -110,14 +221,17 @@ controls.enableDamping = true
  */
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
-  antialias: true
+  antialias: true,
 })
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
+
 //Tone Mapping
 renderer.toneMapping = THREE.ACESFilmicToneMapping
 renderer.toneMappingExposure = 3
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
 gui.add(renderer, 'toneMapping', {
   No: THREE.NoToneMapping,
@@ -126,7 +240,7 @@ gui.add(renderer, 'toneMapping', {
   Cineon: THREE.CineonToneMapping,
   ACESFilmic: THREE.ACESFilmicToneMapping,
 })
-gui.add(renderer, 'toneMappingExposure').min(0).max(10).step(.001)
+gui.add(renderer, 'toneMappingExposure').min(0).max(10).step(0.001)
 
 /**
  * Animate
