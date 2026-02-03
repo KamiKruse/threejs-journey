@@ -49,12 +49,12 @@ const experience = new Experience(document.querySelector('canvas.webgl'))
 //  * Environment map
 //  */
 // const environmentMap = cubeTextureLoader.load([
-//     '/textures/environmentMap/px.jpg',
-//     '/textures/environmentMap/nx.jpg',
-//     '/textures/environmentMap/py.jpg',
-//     '/textures/environmentMap/ny.jpg',
-//     '/textures/environmentMap/pz.jpg',
-//     '/textures/environmentMap/nz.jpg'
+    // '/textures/environmentMap/px.jpg',
+    // '/textures/environmentMap/nx.jpg',
+    // '/textures/environmentMap/py.jpg',
+    // '/textures/environmentMap/ny.jpg',
+    // '/textures/environmentMap/pz.jpg',
+    // '/textures/environmentMap/nz.jpg'
 // ])
 
 // environmentMap.colorSpace = THREE.SRGBColorSpace
