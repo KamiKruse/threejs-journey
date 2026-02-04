@@ -9,7 +9,7 @@ export default class Time extends EventEmitter {
     this.current = this.start
     this.elapsed = 0
     this.delta = 16
-    window.requestAnimationFrame(() => {
+    this.frameId = window.requestAnimationFrame(() => {
       this.tick()
     })
     
@@ -20,6 +20,9 @@ export default class Time extends EventEmitter {
     this.current = currentTime
     this.elapsed = this.current - this.start
     this.trigger('tick')
-    window.requestAnimationFrame(this.tick)
+    this.frameId = window.requestAnimationFrame(this.tick)
+  }
+  destroy(){
+    window.cancelAnimationFrame(this.frameId)
   }
 }

@@ -6,6 +6,7 @@ import Renderer from './Renderer'
 import World from './World/World'
 import Resources from './Utils/Resources'
 import { sources } from './sources'
+import Debug from './Utils/Debug'
 
 let instance = null
 export default class Experience {
@@ -22,6 +23,7 @@ export default class Experience {
     this.canvas = canvas
 
     //setup
+    this.debug = new Debug()
     this.size = new Sizes()
     this.time = new Time()
     this.scene = new THREE.Scene()
@@ -46,6 +48,36 @@ export default class Experience {
   }
   update() {
     this.camera.update()
+    this.world.update()
     this.renderer.update()
+  }
+  destroy() {
+    this.size.off('resize')
+    this.time.off('tick')
+    this.size.destroy()
+    this.time.destroy()
+
+    this.scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose()
+
+        for (const key in child.material) {
+          const value = child.material[key]
+
+          if (value && typeof value.dispose === 'function') {
+            value.dispose()
+          }
+        }
+      }
+    })
+    this.camera.orbitControlsInstance.dispose()
+    this.renderer.rendererInstance.dispose()
+
+    if (this.debug && this.debug.active) {
+      this.debug.ui.destroy()
+    }
+    if (this.canvas && this.canvas.parentNode) {
+      this.canvas.parentNode.removeChild(this.canvas)
+    }
   }
 }
