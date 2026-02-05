@@ -1,6 +1,9 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
+import testFragmentShader from './shaders/fragment.glsl'
+import testVertexShader from './shaders/vertex.glsl'
+
 
 /**
  * Base
@@ -14,22 +17,40 @@ const canvas = document.querySelector('canvas.webgl')
 // Scene
 const scene = new THREE.Scene()
 
-/**
+/** 
  * Textures
  */
 const textureLoader = new THREE.TextureLoader()
+const flagTexture = textureLoader.load('/textures/flag-french.jpg')
 
 /**
  * Test mesh
  */
 // Geometry
 const geometry = new THREE.PlaneGeometry(1, 1, 32, 32)
+const count = geometry.attributes.position.count
+const randoms = new Float32Array(count)
 
+for(let i=0; i<randoms.length; i++)
+{
+    randoms[i] = Math.random()
+}
+geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1))
 // Material
-const material = new THREE.MeshBasicMaterial()
+const material = new THREE.RawShaderMaterial({
+    vertexShader: testVertexShader,
+    fragmentShader: testFragmentShader,
+    uniforms:{
+        uFrequency: {value: new THREE.Vector2(10,5)},
+        uColor: { value: new THREE.Color('lightblue')},
+        uTime: {value: 0},
+        uMap: {value: flagTexture}
+    }
+})
 
 // Mesh
 const mesh = new THREE.Mesh(geometry, material)
+mesh.scale.y = 2/3
 scene.add(mesh)
 
 /**
@@ -85,6 +106,8 @@ const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
 
+    //Update Material
+    material.uniforms.uTime.value = elapsedTime
     // Update controls
     controls.update()
 
